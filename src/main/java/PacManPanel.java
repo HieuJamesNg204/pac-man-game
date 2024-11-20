@@ -232,11 +232,10 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
         gameLoop.start();
     }
 
-    // Method spawning cherry
     private void spawnCherry() {
-        // Cherry appears in the middle of the maze
-        int cherryX = (COLUMN_COUNT / 2) * TILE_SIZE;
-        int cherryY = (ROW_COUNT / 2) * TILE_SIZE;
+        // Cherry appears in the tunnel below ghost house
+        int cherryX = 9 * TILE_SIZE;  // Middle column (19 columns total, so 9 is middle)
+        int cherryY = 11 * TILE_SIZE; // Just below ghost house
         cherry = new Block(cherryX, cherryY, TILE_SIZE, TILE_SIZE, cherryImage);
         cherryVisible = true;
         cherryTimer = CHERRY_DURATION;
@@ -318,6 +317,11 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
 
             for (Block wall : walls) {
                 g.drawImage(wallImage, wall.x, wall.y, wall.width, wall.height, null);
+            }
+
+            // Draw cherry if visible
+            if (cherryVisible && cherry != null) {
+                g.drawImage(cherry.image, cherry.x, cherry.y, cherry.width, cherry.height, null);
             }
 
             g.setColor(Color.WHITE);
@@ -435,13 +439,35 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
             if (collides(pacman, food)) {
                 foodEaten = food;
                 score += 10;
+                eatenDotsCount++;
+
+                if (eatenDotsCount == DOTS_FOR_CHERRY) {
+                    spawnCherry();
+                }
             }
         }
         foods.remove(foodEaten);
 
+        if (cherryVisible) {
+            if (cherry != null && collides(pacman, cherry)) {
+                score += CHERRY_POINTS;
+                cherryVisible = false;
+                cherry = null;
+            }
+
+            cherryTimer--;
+            if (cherryTimer <= 0) {
+                cherryVisible = false;
+                cherry = null;
+            }
+        }
+
         if (foods.isEmpty()) {
             loadMap();
             resetPosition();
+            cherryVisible = false;
+            cherry = null;
+            eatenDotsCount = 0;
         }
     }
 
@@ -551,6 +577,9 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
             lives = 3;
             score = 0;
             isGameOver = false;
+            cherryVisible = false;
+            cherry = null;
+            eatenDotsCount = 0;
             gameLoop.start();
             return;
         }
