@@ -144,6 +144,15 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
     private Image pacmanLeft;
     private Image pacmanRight;
 
+    private Image cherryImage;
+    private Block cherry;
+    private boolean cherryVisible = false;
+    private int cherryTimer = 0;
+    private final int CHERRY_DURATION = 200;
+    private final int CHERRY_POINTS = 100;
+    private int eatenDotsCount = 0;
+    private final int DOTS_FOR_CHERRY = 70;
+
     //X = wall, O = skip, P = pac man, ' ' = food, @ = power pellet
     //Ghosts: b = blue, o = orange, p = pink, r = red
     private String[] tileMap = {
@@ -203,11 +212,15 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
 
         eatenGhosts = new HashSet<>();
 
-        // Load Pac Man images
+        // Load Pac-Man images
         pacmanUp = new ImageIcon(Objects.requireNonNull(getClass().getResource("/pacmanUp.png"))).getImage();
         pacmanDown = new ImageIcon(Objects.requireNonNull(getClass().getResource("/pacmanDown.png"))).getImage();
         pacmanLeft = new ImageIcon(Objects.requireNonNull(getClass().getResource("/pacmanLeft.png"))).getImage();
         pacmanRight = new ImageIcon(Objects.requireNonNull(getClass().getResource("/pacmanRight.png")))
+                .getImage();
+
+        // Load cherry image
+        cherryImage = new ImageIcon(Objects.requireNonNull(getClass().getResource("/cherry.png")))
                 .getImage();
 
         loadMap();
@@ -217,6 +230,16 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
         }
         gameLoop = new Timer(50, this);
         gameLoop.start();
+    }
+
+    // Method spawning cherry
+    private void spawnCherry() {
+        // Cherry appears in the middle of the maze
+        int cherryX = (COLUMN_COUNT / 2) * TILE_SIZE;
+        int cherryY = (ROW_COUNT / 2) * TILE_SIZE;
+        cherry = new Block(cherryX, cherryY, TILE_SIZE, TILE_SIZE, cherryImage);
+        cherryVisible = true;
+        cherryTimer = CHERRY_DURATION;
     }
 
     public void loadMap() {
