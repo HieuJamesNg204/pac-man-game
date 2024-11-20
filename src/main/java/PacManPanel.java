@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.Random;
 
 public class PacManPanel extends JPanel implements ActionListener, KeyListener {
     public class Block {
@@ -32,8 +33,19 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
         }
 
         public void setDirection(char direction) {
+            char prevDirection = this.direction;
             this.direction = direction;
             setVelocity();
+            this.x += this.velocityX;
+            this.y += this.velocityY;
+            for (Block wall : walls) {
+                if (collides(this, wall)) {
+                    this.x -= this.velocityX;
+                    this.y -= this.velocityY;
+                    this.direction = prevDirection;
+                    setVelocity();
+                }
+            }
         }
 
         public void setVelocity() {
@@ -110,6 +122,11 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
     Block pacman;
 
     Timer gameLoop;
+    char[] ghostDirections = {'U', 'D', 'L', 'R'}; // Up Down Left Right
+    Random random = new Random();
+    int score = 0;
+    int lives = 3;
+    boolean gameOver = false;
 
     PacManPanel() {
         setPreferredSize(new Dimension(BOARD_WIDTH, BOARD_HEIGHT));
@@ -133,6 +150,10 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
                 .getImage();
 
         loadMap();
+        for (Block ghost : ghosts) {
+            char ghostDirection = ghostDirections[random.nextInt(4)];
+            ghost.setDirection(ghostDirection);
+        }
         gameLoop = new Timer(50, this);
         gameLoop.start();
     }
@@ -195,18 +216,55 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
         for (Block food : foods) {
             g.fillRect(food.x, food.y, food.width, food.height);
         }
+
+        // Score
+        g.setFont(new Font("Comic Sans MS", Font.PLAIN, 18));
+        if (gameOver) {
+            g.drawString("Game Over: " + score, TILE_SIZE / 2, TILE_SIZE / 2);
+        } else {
+            g.drawString("x" + lives + " Score: " + score, TILE_SIZE / 2, TILE_SIZE / 2);
+        }
     }
 
     public void move() {
         pacman.x += pacman.velocityX;
         pacman.y += pacman.velocityY;
 
+        // Check wall collisions
         for (Block wall : walls) {
             if (collides(pacman, wall)) {
                 pacman.x -= pacman.velocityX;
                 pacman.y -= pacman.velocityY;
             }
         }
+
+        for (Block ghost : ghosts) {
+            if (ghost.y == TILE_SIZE * 9 && ghost.direction != 'U' && ghost.direction != 'D') {
+                ghost.setDirection('U');
+            }
+
+            ghost.x += ghost.velocityX;
+            ghost.y += ghost.velocityY;
+
+            for (Block wall : walls) {
+                if (collides(ghost, wall) || ghost.x <= 0 || ghost.x + ghost.width >= BOARD_WIDTH) {
+                    ghost.x -= ghost.velocityX;
+                    ghost.y -= ghost.velocityY;
+                    char newDirection = ghostDirections[random.nextInt(4)];
+                    ghost.setDirection(newDirection);
+                }
+            }
+        }
+
+        // Check food collision
+        Block foodEaten = null;
+        for (Block food : foods) {
+            if (collides(pacman, food)) {
+                foodEaten = food;
+                score += 10;
+            }
+        }
+        foods.remove(foodEaten);
     }
 
     public boolean collides(Block a, Block b) {
@@ -232,6 +290,13 @@ public class PacManPanel extends JPanel implements ActionListener, KeyListener {
             case KeyEvent.VK_DOWN -> pacman.setDirection('D');
             case KeyEvent.VK_LEFT -> pacman.setDirection('L');
             case KeyEvent.VK_RIGHT -> pacman.setDirection('R');
+        }
+
+        switch (pacman.direction) {
+            case 'U' -> pacman.image = pacmanUp;
+            case 'D' -> pacman.image = pacmanDown;
+            case 'L' -> pacman.image = pacmanLeft;
+            case 'R' -> pacman.image = pacmanRight;
         }
     }
 
